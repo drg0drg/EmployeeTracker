@@ -1,40 +1,40 @@
-DROP DATABASE IF EXISTS employees;
+DROP DATABASE IF EXISTS Employees_db;
 
-CREATE DATABASE employees;
+CREATE DATABASE Employees_db;
 
-USE employees;
+USE Employees_db;
 
-CREATE TABLE department (
+CREATE TABLE department_table (
 id INT NOT NULL AUTO_INCREMENT,
 department VARCHAR(30) UNIQUE NOT NULL,
 PRIMARY KEY (id)
 );
 
-CREATE TABLE roles (
+CREATE TABLE roles_table (
 id INT NOT NULL AUTO_INCREMENT,
 title VARCHAR(30) NOT NULL,
 salary DECIMAL(10,0) NOT NULL,
 department_id INT NOT NULL,
 PRIMARY KEY (id),
-FOREIGN KEY (department_id) REFERENCES department(id)
+FOREIGN KEY (department_id) REFERENCES department_table(id)
 );
 
-CREATE TABLE employee (
+CREATE TABLE employee_table (
 id INT NOT NULL AUTO_INCREMENT,
 first_name VARCHAR(30) NOT NULL,
 last_name VARCHAR(30) NOT NULL,
 role_id INT NOT NULL,
 manager_id INT NULL,
 PRIMARY KEY (id),
-FOREIGN KEY (role_id) REFERENCES roles(id),
-FOREIGN KEY (manager_id) REFERENCES employee(id)
+FOREIGN KEY (role_id) REFERENCES roles_table(id),
+FOREIGN KEY (manager_id) REFERENCES employee_table(id)
 );
 
 
-INSERT INTO department (department)
+INSERT INTO department_table (department)
 VALUES ('Head'), ('Board'), ('Engineering'), ('Marketing'),('Finance');
 
-INSERT INTO roles (title, salary, department_id)
+INSERT INTO roles_table (title, salary, department_id)
 VALUES 
 	('CEO', 200000, 1),
 	('CTO', 100000, 2),
@@ -55,7 +55,7 @@ VALUES
 
 
 
-INSERT INTO employee (first_name, last_name, role_id, manager_id)
+INSERT INTO employee_table (first_name, last_name, role_id, manager_id)
 VALUES
   ('Jason', 'Osborne', 1, NULL),
   ('David', 'Williams', 2, 1),

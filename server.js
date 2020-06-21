@@ -2,36 +2,36 @@ const inquirer = require("inquirer");
 const mysql = require("mysql");
 const cTable = require("console.table");
 const util = require("util");
+const dotenv = require(`dotenv`).config();
 
+//Set up the connection
 const connection = mysql.createConnection({
   host: "localhost",
   port: process.env.PORT || 3306,
   user: "root",
   password: "",
-  database: "employees",
+  database: "employees_db",
 });
 
-promptQuestions();
+// Establish connection and launch promptQuestions function
+connection.connect(function (err) {
+  if (err) throw err;
+  promptQuestions();
+});
 
+//Function to prompt questions in terminal
 function promptQuestions() {
   inquirer
     .prompt({
-      name: "start",
+      name: "begin",
       type: "list",
       message: "What would you like to do?",
       choices: [
         "View All Employees",
         "View Employees by Department",
         "View Employees by Role",
-        //   "View Employees by Manager",
         "Add Employee",
         "Update Employee's Role",
-        "Update Employee's Manager",
-        "Delete Employee",
-        "Add Role",
-        "Delete Role",
-        "Add DEpartment",
-        "Delete Department",
         "Quit",
       ],
     })
@@ -42,8 +42,6 @@ function promptQuestions() {
         viewEmpByDepartment();
       } else if (answer.begin === "View Employees by Role") {
         viewEmpByRole();
-      } else if (answer.begin === "View Employees by Manager") {
-        viewEmpRole();
       } else if (answer.begin === "Add Employee") {
         addEmployee();
       } else if (answer.begin === "Update Employee's Role") {
@@ -56,9 +54,10 @@ function promptQuestions() {
     });
 }
 
+// Function to view all employees in db
 function viewAllEmployees() {
   connection.query(
-    "SELECT employee.id, employee.first_name, employee.last_name, employee.manager_id, roles.title, roles.salary, department.department FROM ((employee INNER JOIN roles ON employee.role_id = roles.id) INNER JOIN department ON roles.department_id = department.id)",
+    "SELECT employee_table.id, employee_table.first_name, employee_table.last_name, employee_table.manager_id, roles_table.title, roles_table.salary, department_table.department FROM ((employee_table INNER JOIN roles_table ON employee_table.role_id = roles_table.id) INNER JOIN department_table ON roles_table.department_id = department_table.id)",
     function (err, result) {
       if (err) throw err;
       console.table(result);
@@ -67,17 +66,7 @@ function viewAllEmployees() {
   );
 }
 
-// viewAllEmployees();
-
-// function viewAllEmp() {
-//   connection.query("SELECT employee.id, employee.first_name, employee.last_name, employee.manager_id, roles.title, roles.salary, department.department FROM ((employee INNER JOIN roles ON employee.role_id = roles.id) INNER JOIN department ON roles.department_id = department.id)", function (err, result) {
-//       if (err) throw err;
-//       console.table(result);
-//       start();
-//   });
-// }
-
-//View all employees by department
+//Function to view all employees in a specific department
 function viewEmpByDepartment() {
   inquirer
     .prompt({
@@ -95,7 +84,7 @@ function viewEmpByDepartment() {
         "Finance"
       ) {
         connection.query(
-          "SELECT employee.id, employee.first_name, employee.last_name, employee.manager_id, roles.title, roles.salary, department.department FROM ((employee INNER JOIN roles ON employee.role_id = roles.id) INNER JOIN department ON roles.department_id = department.id) WHERE department = ?",
+          "SELECT employee_table.id, employee_table.first_name, employee_table.last_name, employee_table.manager_id, roles_table.title, roles_table.salary, department_table.department FROM ((employee_table INNER JOIN roles_table ON employee_table.role_id = roles_table.id) INNER JOIN department_table ON roles_table.department_id = department_table.id) WHERE department = ?",
           [answer.department],
           function (err, result) {
             if (err) throw err;
@@ -107,7 +96,7 @@ function viewEmpByDepartment() {
     });
 }
 
-//View all employees by role
+//Function to view all employees with a specific role
 function viewEmpByRole() {
   inquirer
     .prompt({
@@ -141,7 +130,7 @@ function viewEmpByRole() {
         "Finance Analyst"
       ) {
         connection.query(
-          "SELECT employee.id, employee.first_name, employee.last_name, employee.manager_id, roles.title, roles.salary, department.department FROM ((employee INNER JOIN roles ON employee.role_id = roles.id) INNER JOIN department ON roles.department_id = department.id) WHERE title = ?",
+          "SELECT employee_table.id, employee_table.first_name, employee_table.last_name, employee_table.manager_id, roles_table.title, roles_table.salary, department_table.department FROM ((employee_table INNER JOIN roles_table ON employee_table.role_id = roles_table.id) INNER JOIN department_table ON roles_table.department_id = department_table.id) WHERE title = ?",
           [answer.role],
           function (err, result) {
             if (err) throw err;
@@ -153,7 +142,7 @@ function viewEmpByRole() {
     });
 }
 
-//Add new employee
+//Function to add a new employee in db
 function addEmployee() {
   inquirer
     .prompt([
@@ -227,7 +216,7 @@ function addEmployee() {
       }
 
       connection.query(
-        "INSERT INTO roles SET ?",
+        "INSERT INTO roles_table SET ?",
         {
           title: answer.title,
           salary: answer.salary,
@@ -235,6 +224,7 @@ function addEmployee() {
         },
         function (err, result) {
           if (err) throw err;
+          console.log(result);
         }
       );
 
@@ -282,19 +272,95 @@ function addEmployee() {
         role_id = 15;
       }
 
+      connection.query(
+        "INSERT INTO employee_table SET ?",
+        {
+          first_name: answer.first,
+          last_name: answer.last,
+          role_id: role_id,
+          manager_id: manager_id,
+        },
+        function (err, result) {
+          if (err) throw err;
+          console.log(result);
+          console.log("=== New Employee Added ===");
+          promptQuestions();
+        }
+      );
+    });
+}
+
+//Function to update an existing employee in db
+function updateRole() {
+  connection.query(
+    "SELECT id, first_name, last_name FROM employee_table",
+    function (err, result) {
+      if (err) throw err;
+      const choiceArray = [];
+      for (let i = 0; i < result.length; i++) {
+        const choices = JSON.stringify(result[i]);
+        choiceArray.push(choices);
+      }
+      questions = [
+        {
+          name: "employee",
+          type: "list",
+          message: "Which employee would you like to update?",
+          choices: choiceArray,
+        },
+        {
+          name: "newTitle",
+          type: "list",
+          message: "What is the employee's new role?",
+          choices: [
+            "CEO",
+            "CTO",
+            "COO",
+            "CFO",
+            "Lead Engineer",
+            "Engineer",
+            "Marketing Manager",
+            "Marketing Analyst",
+            "Finance Manager",
+            "Finance Analyst",
+          ],
+        },
+      ];
+      inquirer.prompt(questions).then(function (answer) {
+        console.log(answer.employee);
+        console.log(answer.newTitle);
+        let role_id = 0;
+        if (answer.newTitle === "CEO") {
+          role_id = 1;
+        } else if (answer.newTitle === "CTO") {
+          role_id = 2;
+        } else if (answer.newTitle === "COO") {
+          role_id = 3;
+        } else if (answer.newTitle === "CFO") {
+          role_id = 4;
+        } else if (answer.newTitle === "Lead Engineer") {
+          role_id = 5;
+        } else if (answer.newTitle === "Engineer") {
+          role_id = 7;
+        } else if (answer.newTitle === "Marketing Manager") {
+          role_id = 11;
+        } else if (answer.newTitle === "Marketing Analyst") {
+          role_id = 12;
+        } else if (answer.newTitle === "Finance Manager") {
+          role_id = 14;
+        } else if (answer.newTitle === "Finance Analyst") {
+          role_id = 15;
+        }
         connection.query(
-          "INSERT INTO employee SET ?",
-          {
-            first_name: answer.first,
-            last_name: answer.last,
-            role_id: role_id,
-            manager_id: manager_id,
-          },
+          "UPDATE employee_table SET role_id = ? WHERE id=?",
+          [role_id, answer.employee],
           function (err, result) {
             if (err) throw err;
-            console.log("=== New Employee Added ===");
+            console.log("=== Updated Employee ===");
             promptQuestions();
           }
         );
-    });
+      });
+    }
+  );
 }
